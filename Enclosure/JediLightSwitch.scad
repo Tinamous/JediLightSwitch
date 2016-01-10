@@ -4,12 +4,17 @@
 // New style Double switch = 1 - not implemented.
 // Old style Single switch = 2
 // Old style Double switch = 3
-switchType  = 0; // Update depth also.
+switchType  = 2; // Update depth also.
 
 // if new style switch
-depth = 19;
+//depth = 19;
 // if old style
-//depth = 28;
+depth = 28;
+
+// The gap to leave between the cover and the base when pushed together.
+// Adjust this to give a tighter (smaller number) or looser (larger number) fit between
+// the base and the cover. This will depend on your printer.
+coverToBasegap = 0.4;
             
 // Size of the outer bezel that surounds the PCB
 bezelSize = 2;
@@ -236,14 +241,18 @@ module Pcb() {
         cube([85, 40, 3]);
     }
     
+    // V1.1 of PCB no longer has screw holes.
+    includeScrewHoles = false;
     // Screw holes
-    // All the way through to prevent trapped resin on Form printer.
-    translate([(pcbWidth/2) - 48 ,(pcbHeight/2), -(depth+1)]) {
-        cylinder(r=1.25, h=depth + 3, $fn=40);
-    }
+    if (includeScrewHoles) {
+        // All the way through to prevent trapped resin on Form printer.
+        translate([(pcbWidth/2) - 48 ,(pcbHeight/2), -(depth+1)]) {
+            cylinder(r=1.25, h=depth + 3, $fn=40);
+        }
     
-    translate([(pcbWidth/2) + 48,(pcbHeight/2), -(depth+1)]) {
-        cylinder(r=1.25, h=depth + 3, $fn=40);
+        translate([(pcbWidth/2) + 48,(pcbHeight/2), -(depth+1)]) {
+            cylinder(r=1.25, h=depth + 3, $fn=40);
+        }
     }
 }
 
@@ -272,10 +281,7 @@ module Cover() {
     
     coverWidth = width + coverWallThickness*2;
     coverHeight = height + coverWallThickness*2;
-    
-    // The gap to leave between the cover and the base when pushed together.
-    coverToBasegap = 0.2;
-    
+        
     // Cover depth to match the overall depth of the base
     // plus the additional cover top thickness
     // then allow 1mm gap for wall edge variances so it's a snug-ish fit
@@ -287,10 +293,10 @@ module Cover() {
     sensorSetHeight = 12;
     sensorSetWidth = 8;
     // How far down from the top of the cover the opening for the sensor set should be.
-    sensorSetTopOffset = 3.5;
+    sensorSetTopOffset = 4.5;
     
     usbHeight = 10; // Height here is in the z axid.
-    usbWidth = 12;
+    usbWidth = 13;
     
     // How much over the top (sensors) the cover should cover.
     coverTopOverlap = 21;
@@ -403,7 +409,7 @@ rotate(180) {
     // Adjust x offset to move cover up/down onto base.
     translate([-width -2.2,-height -2.2,0]) {
         color( [0, 1, 0, 1] ) {
-           Cover();
+           //Cover();
         }
     }
 }
@@ -414,7 +420,7 @@ rotate(180) {
 
 // Show the actual light switch we are covering
 // comment out when generating STLs.
-//Switch(8.5,13,1);
+Switch(8.5,13,1);
 
     
 // Show the PCB (in purple)
