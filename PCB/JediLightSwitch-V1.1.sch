@@ -12192,7 +12192,7 @@ new: Attribute TP_SIGNAL_NAME&lt;br&gt;
 10nF no response.
 68nF sensitive without touch</text>
 <text x="178.562" y="-82.55" size="2.54" layer="97">Stephen Harrison</text>
-<text x="248.92" y="-86.36" size="2.54" layer="97">1.1</text>
+<text x="248.92" y="-86.36" size="2.54" layer="97">1.1.1</text>
 <text x="25.4" y="-91.44" size="1.6764" layer="97">Sparkfun Eagle Library and breakout boards for HTU21D, APDS-9960 &amp; AT42QT1010 used under CC. See Readme.md</text>
 <text x="27.94" y="-27.94" size="2.54" layer="97">Reverse mount LEDs.</text>
 <text x="68.58" y="-53.34" size="1.27" layer="97">LED mounts on base of board with lens going 
