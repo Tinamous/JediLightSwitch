@@ -19,9 +19,9 @@ Using a low flow and a temperature appropriate for the solder paste heat the boa
 
 The bottom of the board should be hand solderered to prevent U1/U2 dropping off. Most parts are 1206 or 0805 and not overly difficult. U4 (AT42QT1010) is a little difficult but excess solder can be removed with solder wick if needed.
 
-The value of C4 may need to be adjusted to increase/reduce sensitivity. 10nF was found to be to little. 68nF was overly sensitive.
+The value of C4 may need to be adjusted to increase/reduce sensitivity. 10nF was found to be to little. 68nF was overly sensitive. A 22nF capacitor worked well.
 
-The value of R5/R6 should be selected based on the required brightness of the LEDs and the LED selected.
+The value of R5/R6/R8 and R9 should be selected based on the required brightness of the LEDs and the LED selected as well as the enclosure. For a clear enclosure increase the resistance (e.g. 1k) to dim the LEDs, other materials such as grey PLA let enough light through to work well with the blue LEDs and 100R resistors.
 
 
 Resources:
