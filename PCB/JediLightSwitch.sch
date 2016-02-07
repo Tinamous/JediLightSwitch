@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -14470,7 +14470,7 @@ Source: www.kingbright.com</description>
 <part name="R6" library="rcl" deviceset="R-EU_" device="R0805" value="1k"/>
 <part name="GND6" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="U4" library="SparkFun-DigitalIC" deviceset="AT42QT1010" device="SOT23"/>
-<part name="R7" library="rcl" deviceset="R-EU_" device="R0805" value="5k"/>
+<part name="R7" library="rcl" deviceset="R-EU_" device="R0805" value="4k7"/>
 <part name="GND7" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="GND8" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="C4" library="rcl" deviceset="C-EU" device="C0805" value="22nF"/>
@@ -14485,7 +14485,7 @@ Source: www.kingbright.com</description>
 <part name="R9" library="rcl" deviceset="R-EU_" device="R0805" value="1k"/>
 <part name="JP2" library="SparkFun-Connectors" deviceset="M04" device="SMD_STRAIGHT_COMBO"/>
 <part name="LOGO1" library="SparkFun-Aesthetics" deviceset="OSHW-LOGO" device="M"/>
-<part name="R10" library="rcl" deviceset="R-EU_" device="R0805" value="5k"/>
+<part name="R10" library="rcl" deviceset="R-EU_" device="R0805" value="4k7"/>
 <part name="C6" library="rcl" deviceset="C-EU" device="C0805" value="0.1uF"/>
 <part name="GND17" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="LOGO2" library="SparkFun-Aesthetics" deviceset="OSHW-LOGO" device="M"/>
@@ -14554,8 +14554,8 @@ Source: www.kingbright.com</description>
 <part name="GND27" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="LED1" library="led" deviceset="LED" device="SMT1206" value="IR"/>
 <part name="LED2" library="led" deviceset="LED" device="SMT1206" value="IR"/>
-<part name="R20" library="rcl" deviceset="R-EU_" device="R0805" value="60R"/>
-<part name="R21" library="rcl" deviceset="R-EU_" device="R0805" value="60R"/>
+<part name="R20" library="rcl" deviceset="R-EU_" device="R0805" value="62R"/>
+<part name="R21" library="rcl" deviceset="R-EU_" device="R0805" value="62R"/>
 <part name="C13" library="rcl" deviceset="C-EU" device="C0805" value="1.0uF"/>
 <part name="GND28" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="SUPPLY19" library="SparkFun-Aesthetics" deviceset="5V" device=""/>
