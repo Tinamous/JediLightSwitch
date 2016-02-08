@@ -19,6 +19,8 @@ depth = 25; // 28mm gives plenty
 // Supper skinny - helpful for test print to check sizes.
 // depth = 5;
 
+minimalCover = false;
+
 // How deep to make the USB connector cutout.
 // For ease of use this should be the same as, or deeper than 
 // the depth of the cover so the cover can be fitted/removed 
@@ -372,22 +374,13 @@ module Cover() {
     coverWallOffset = 1;
     coverDepth = depth + coverWallThickness - coverWallOffset;
     coverTopThickness = 1;
-    
-    sensorSetHeight = 12;
-    sensorSetWidth = 8;
-    // How far down from the top of the cover the opening for the sensor set should be.
-    sensorSetTopOffset = 3.5;
-    
+       
     usbHeight = 10; // Height here is in the z axid.
     usbWidth = 13;
     
     // How much over the top (sensors) the cover should cover.
     coverTopOverlap = 21;
-    // How much over the bottom the cover should cover.
-    // this hides the non-touchable zone (where the Photon would mess
-    // with tuch sensor.
-    coverBottomOverlap = 43;
-    
+        
     includeBottomVentHoles = true;
     ventWidth = width - 40;
     ventHeight = 8;
@@ -397,41 +390,11 @@ module Cover() {
 			GenericBase(coverWidth, coverHeight, coverDepth);
 		}
 		union() {
-			// Hollow out the main base area.
-			//translate([innerCutoutOffset, innerCutoutOffset, baseInnerThickness]) {
+            // Hollow out to fit around the base.
             translate([coverWallThickness - coverToBasegap, 
-                        coverWallThickness - coverToBasegap, 
-                        -coverTopThickness]) {
-				GenericBase(width + (coverToBasegap*2), height + (coverToBasegap*2), coverDepth);
-			}
-            
-            // Cut out the main touch switch area.
-            // Gives an overlap of 10mm on the PCB left and right
-            // and a larger overlap at the top to cover the sensor area.
-            // and matching overlap at the bottom to give it some sym.
-            translate([10,coverTopOverlap,+2]) {
-				GenericBase(coverWidth-20, coverHeight- (coverTopOverlap + coverBottomOverlap ), coverDepth);
-			}
-            
-            // Cout out the space for the sensors.
-            // move down coverWallThickness + 2mm from top so some PCB is covered.           
-            translate([(coverWidth/2),
-                        coverWallThickness + sensorSetTopOffset + (sensorSetWidth/2)-1,
-                        depth-coverTopThickness + coverWallOffset]) {
-                #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
-            }
-            
-            translate([(coverWidth/2),
-                        coverWallThickness + sensorSetTopOffset + sensorSetHeight - (sensorSetWidth/2) + 1,
-                        depth-coverTopThickness + coverWallOffset]) {
-                #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
-            }
-            
-            // Join the two cylinders to make the cutout oblong
-            translate([(coverWidth/2)-(sensorSetWidth/2),
-                        coverWallThickness + sensorSetTopOffset + 3,
-                        depth-coverTopThickness + coverWallOffset]) {
-                #cube([sensorSetWidth,sensorSetHeight-6,coverTopThickness]);
+                            coverWallThickness - coverToBasegap, 
+                            -coverTopThickness]) {
+                    GenericBase(width + (coverToBasegap*2), height + (coverToBasegap*2), coverDepth);
             }
             
             // Cutout for the USB connector...
@@ -451,11 +414,82 @@ module Cover() {
                     #cube([ventWidth,coverWallThickness+2,ventHeight]);
                 }
             }
-            
-            // Don't include LED holes as material is most likely thin enough
-            // for the LEDs to shine through without needing extra holes.
+                
+            if (minimalCover) {
+                // Allow for cover thickness, the base bexel size.
+                // base has 2mm PCB overlap
+                overlap = coverWallThickness + bezelSize + 2;
+                doubleOverlap = overlap * 2;
+                
+                // Cut out the main PCB area
+                translate([overlap,overlap,+2]) {
+                    GenericBase(coverWidth-doubleOverlap, coverHeight- doubleOverlap, coverDepth);
+                }
+            } else {
+                coverCutouts(coverWidth, 
+                                coverHeight, 
+                                coverWallThickness, 
+                                coverTopThickness,
+                                coverDepth, 
+                                coverTopOverlap, 
+                                coverWallOffset);
+            }
         }
 	}
+}
+
+// -----------------------------------------
+// Defines the parts of the cover to be cutout.
+// -----------------------------------------
+module coverCutouts(coverWidth, 
+                    coverHeight, 
+                    coverWallThickness, 
+                    coverTopThickness,
+                    coverDepth, 
+                    coverTopOverlap, 
+                    coverWallOffset) {
+
+    // How far down from the top of the cover the opening for the sensor set should be.
+    sensorSetTopOffset = 3.5;
+    sensorSetHeight = 12;
+    sensorSetWidth = 8;
+    
+    // How much over the bottom the cover should cover.
+    // this hides the non-touchable zone (where the Photon would mess
+    // with tuch sensor.
+    coverBottomOverlap = 43;
+    
+                // Cut out the main touch switch area.
+                // Gives an overlap of 10mm on the PCB left and right
+                // and a larger overlap at the top to cover the sensor area.
+                // and matching overlap at the bottom to give it some sym.
+                translate([10,coverTopOverlap,+2]) {
+                    GenericBase(coverWidth-20, coverHeight- (coverTopOverlap + coverBottomOverlap ), coverDepth);
+                }
+                
+                // Cout out the space for the sensors.
+                // move down coverWallThickness + 2mm from top so some PCB is covered.           
+                translate([(coverWidth/2),
+                            coverWallThickness + sensorSetTopOffset + (sensorSetWidth/2)-1,
+                            depth-coverTopThickness + coverWallOffset]) {
+                    #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
+                }
+                
+                translate([(coverWidth/2),
+                            coverWallThickness + sensorSetTopOffset + sensorSetHeight - (sensorSetWidth/2) + 1,
+                            depth-coverTopThickness + coverWallOffset]) {
+                    #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
+                }
+                
+                // Join the two cylinders to make the cutout oblong
+                translate([(coverWidth/2)-(sensorSetWidth/2),
+                            coverWallThickness + sensorSetTopOffset + 3,
+                            depth-coverTopThickness + coverWallOffset]) {
+                    #cube([sensorSetWidth,sensorSetHeight-6,coverTopThickness]);
+                }
+                                
+                // Don't include LED holes as material is most likely thin enough
+                // for the LEDs to shine through without needing extra holes.
 }
 
 // -----------------------------------------
