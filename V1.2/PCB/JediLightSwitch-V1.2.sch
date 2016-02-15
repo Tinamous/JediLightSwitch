@@ -14547,7 +14547,9 @@ Source: www.kingbright.com</description>
 <part name="C12" library="rcl" deviceset="C-EU" device="C0805" value="4.7uF"/>
 <part name="GND25" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
 <part name="TP2" library="testpad" deviceset="TP" device="TP20R"/>
-<part name="Q1" library="SparkFun-DiscreteSemi" deviceset="MOSFET-NCHANNEL" device="AO3404A" value=""/>
+<part name="Q1" library="SparkFun-DiscreteSemi" deviceset="MOSFET-NCHANNEL" device="AO3404A" value="BSS138">
+<attribute name="FARNELL" value="9845330"/>
+</part>
 <part name="R18" library="rcl" deviceset="R-EU_" device="R0805" value="10R"/>
 <part name="R19" library="rcl" deviceset="R-EU_" device="R0805" value="10k"/>
 <part name="GND26" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
@@ -15219,6 +15221,7 @@ which should be enough to drive the pixels.</text>
 <instance part="Q1" gate="G$1" x="271.78" y="-48.26" smashed="yes">
 <attribute name="NAME" x="274.32" y="-53.34" size="1.778" layer="95"/>
 <attribute name="VALUE" x="271.78" y="-55.88" size="1.778" layer="96"/>
+<attribute name="FARNELL" x="271.78" y="-48.26" size="1.778" layer="96" display="off"/>
 </instance>
 <instance part="R18" gate="G$1" x="254" y="-40.64" rot="R90"/>
 <instance part="R19" gate="G$1" x="254" y="-55.88" rot="R90"/>

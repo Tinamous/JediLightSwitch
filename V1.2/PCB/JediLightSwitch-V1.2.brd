@@ -2375,8 +2375,9 @@ Please make sure your boards conform to these design rules.</description>
 <attribute name="NAME" x="20.3675" y="35.975" size="1.27" layer="26" rot="MR0"/>
 <attribute name="VALUE" x="19.812" y="33.5915" size="0.0254" layer="28" rot="MR0"/>
 </element>
-<element name="Q1" library="SparkFun-DiscreteSemi" package="SOT23-3" value="" x="26.3525" y="94.9325" rot="MR0">
+<element name="Q1" library="SparkFun-DiscreteSemi" package="SOT23-3" value="BSS138" x="26.3525" y="94.9325" rot="MR0">
 <attribute name="PROD_ID" value="TRAN-12988" x="26.3525" y="94.9325" size="0.8128" layer="28" font="vector" rot="MR0" display="off"/>
+<attribute name="FARNELL" value="9845330" x="26.3525" y="94.9325" size="1.778" layer="28" rot="MR0" display="off"/>
 </element>
 <element name="R18" library="rcl" package="R0805" value="10R" x="11.1125" y="92.075" smashed="yes" rot="MR270">
 <attribute name="NAME" x="10.16" y="94.9325" size="0.8128" layer="26" rot="MR180"/>
