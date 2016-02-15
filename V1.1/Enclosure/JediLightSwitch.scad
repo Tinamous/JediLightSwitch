@@ -5,21 +5,30 @@
 // -----------------------------------------------------------------
 
 // Define the switch type to be covered.
-// This only effects the switch modeled, not the depth of the case.
+// This only effects the switch modeled to help visualise the case
+// It does not effect the base or cover stl's.
 // New style Single switch = 0
 // New style Double switch = 1 - not implemented.
 // Old style Single switch = 2
 // Old style Double switch = 3
 switchType  = 0; // Update depth also
 
-// if new style switch
+// How deep the base & cover should be.
+// For new style switch:
 // depth = 16; // 19mm Gives plenty of room in new switches.
-// if old style
-depth = 25; // 28mm gives plenty
-// Supper skinny - helpful for test print to check sizes.
+// For old style
+depth = 19; // 28mm gives plenty
+// Super skinny - helpful for test print to check sizes.
 // depth = 5;
 
+// Set to true to a minalist cover, goes a few mm over the PCB
+// leaving most of the PCB exposed.
 minimalCover = false;
+
+// Which version of the PCB is to be used.
+// The effects which cutouts are required
+// at the top of the cover.
+pcbVersion = 2;
 
 // How deep to make the USB connector cutout.
 // For ease of use this should be the same as, or deeper than 
@@ -34,9 +43,11 @@ coverToBasegap = 0.2;
 
 // Change these to show the various main components.
 // They are modified through command line calls when generating STL files.
-showCover = true;
+// e.g To generate the base stl file set showBase to true and everything else
+// to false.
+showCover = false;
 showBase = false;
-showPcb = false;
+showPcb = true;
 showSwitch = false;
 
 
@@ -217,97 +228,102 @@ module PcbCutout() {
 // Generate a model of the PCB.
 // -----------------------------------------
 module Pcb() {
-        photonWidth = 24;
-        photonHeight = 37;
-        photonDepth = 3.5;
+    photonWidth = 24;
+    photonHeight = 37;
+    photonDepth = 3.5;
         
-        // PCB.
-        color( "purple" ) {
-            GenericBase(pcbWidth, pcbHeight, pcbThickness);
-        }
+    // PCB.
+    color( "purple" ) {
+        GenericBase(pcbWidth, pcbHeight, pcbThickness);
+    }
         
-        // Photon
-        translate([(pcbWidth/2) - (photonWidth /2),0 , -(photonDepth)]) {
-            cube([photonWidth, photonHeight, photonDepth]);
-        }
+    // Photon
+    translate([(pcbWidth/2) - (photonWidth /2),0 , -(photonDepth)]) {
+        cube([photonWidth, photonHeight, photonDepth]);
+    }
         
-        // LEDs
-        ledOffsetFromSide = 3;
-        ledOffsetFromTopBottom = 1.5;
-        ledWidth = 3; // Include the resistor and LED and a small fudge for the oversized PCB.
-        ledHeight = 7;
-        ledDepth = 1;
-        
-        color( "blue" )  {
-            // Top left LED
-            // 0,0,0 bottom left.
-            translate([
-                        0 + ledOffsetFromSide,
-                        pcbHeight - ledOffsetFromTopBottom - ledHeight,
-                        -ledDepth]) {
-                cube ([ledWidth, ledHeight, ledDepth]);
-            }
-           
-            
-            // top right LED
-            translate([
-                        pcbWidth - ledOffsetFromSide - ledWidth,
-                        pcbHeight - ledOffsetFromTopBottom - ledHeight,-ledDepth]) {
-                cube ([ledWidth, ledHeight, ledDepth]);
-            }
-            
-            // Bottom Left LED.
-            translate([
+    // LEDs
+    ledOffsetFromSide = 3;
+    ledOffsetFromTopBottom = 1.5;
+    ledWidth = 3; // Include the resistor and LED and a small fudge for the oversized PCB.
+    ledHeight = 7;
+    ledDepth = 1;
+    
+    color( "blue" )  {
+        // Top left LED
+        // 0,0,0 bottom left.
+        translate([
                     0 + ledOffsetFromSide,
-                    ledOffsetFromTopBottom,
+                    pcbHeight - ledOffsetFromTopBottom - ledHeight,
                     -ledDepth]) {
-                cube ([ledWidth, ledHeight, ledDepth]);
-            }
-            
-            // Bottom Right LED.
-            translate([
+            cube ([ledWidth, ledHeight, ledDepth]);
+        }
+       
+        
+        // top right LED
+        translate([
                     pcbWidth - ledOffsetFromSide - ledWidth,
-                    ledOffsetFromTopBottom,
-                    -ledDepth]) {
-                cube ([ledWidth, ledHeight, ledDepth]);
-            }
-            
-            // Show LED holes with LEDs shining through
-            // LED hole
-            translate([
-                        0 + 5,
-                        pcbHeight - 5,
-                        -0.1]) {
-                cylinder(d=2.5, h=3, $fn=10);
-            }
-            
-            translate([
-                        pcbWidth - 5,
-                        pcbHeight - 5,
-                        -0.1]) {
-                cylinder(d=2.5, h=3, $fn=10);
-            }
-            
-            translate([
-                        0 + 5,
-                        5,
-                        -0.1]) {
-                cylinder(d=2.5, h=3, $fn=10);
-            }
-            
-            translate([pcbWidth - 5,
-                        5,
-                        -0.1]) {
-                cylinder(d=2.5, h=3, $fn=10);
-            }
+                    pcbHeight - ledOffsetFromTopBottom - ledHeight,-ledDepth]) {
+            cube ([ledWidth, ledHeight, ledDepth]);
         }
         
-        // components for sensors on the base of the board.
-        // V1.1 this is not such as issue as they are 4 mm from edge.
-        translate([(pcbWidth/2) -15 ,pcbHeight - 25, -pcbThickness]) {
-            cube([44, 20, ledDepth + pcbThickness]);
+        // Bottom Left LED.
+        translate([
+                0 + ledOffsetFromSide,
+                ledOffsetFromTopBottom,
+                -ledDepth]) {
+            cube ([ledWidth, ledHeight, ledDepth]);
         }
         
+        // Bottom Right LED.
+        translate([
+                pcbWidth - ledOffsetFromSide - ledWidth,
+                ledOffsetFromTopBottom,
+                -ledDepth]) {
+            cube ([ledWidth, ledHeight, ledDepth]);
+        }
+        
+        // Show LED holes with LEDs shining through
+        // LED hole
+        translate([
+                    0 + 5,
+                    pcbHeight - 5,
+                    -0.1]) {
+            cylinder(d=2.5, h=3, $fn=10);
+        }
+        
+        translate([
+                    pcbWidth - 5,
+                    pcbHeight - 5,
+                    -0.1]) {
+            cylinder(d=2.5, h=3, $fn=10);
+        }
+        
+        translate([
+                    0 + 5,
+                    5,
+                    -0.1]) {
+            cylinder(d=2.5, h=3, $fn=10);
+        }
+        
+        translate([pcbWidth - 5,
+                    5,
+                    -0.1]) {
+            cylinder(d=2.5, h=3, $fn=10);
+        }
+    }
+    
+    // components for sensors on the base of the board.
+    // V1.1 this is not such as issue as they are 4 mm from edge.
+    translate([(pcbWidth/2) -15 ,pcbHeight - 25, -pcbThickness]) {
+        cube([44, 20, ledDepth + pcbThickness]);
+    }
+    
+    // Show different model of PCB sensors
+    // for the second version.
+    // TODO: Include battery connector and Neopixels 
+    // on the base as well.
+    if (pcbVersion == 1) {
         // Humidity and gesture components on the board top.
         // 2.5mm offset from board top.
         // 10mm heihg
@@ -322,25 +338,69 @@ module Pcb() {
         // 40mm height
         // 85mm wide
         // 8mm from left/right edge.
-        translate([8,pcbHeight -40- 19, 0]) {
-            color( "SteelBlue" )  {
-                cube([85, 40, pcbThickness + 1]);
+        touchPad(19, pcbHeight, pcbThickness );
+    } else if (pcbVersion == 2) {
+        // Single row of 5 sensors.
+        translate([(pcbWidth/2) - 32.5 ,pcbHeight - 8, pcbThickness]) {
+            color( "black" ) {
+                cube([65, 6, 2]);
             }
         }
         
-        // V1.1 of PCB no longer has screw holes.
-        includeScrewHoles = false;
-        // Screw holes
-        if (includeScrewHoles) {
-            // All the way through to prevent trapped resin on Form printer.
-            translate([(pcbWidth/2) - 48 ,(pcbHeight/2), -(depth+1)]) {
-                cylinder(r=1.25, h=depth + 3, $fn=40);
-            }
+        // Small raised area to indicade the touch pad.
+        // touch pad is 17.5mm from top.
+        touchPad(17.5, pcbHeight, pcbThickness);
         
-            translate([(pcbWidth/2) + 48,(pcbHeight/2), -(depth+1)]) {
-                cylinder(r=1.25, h=depth + 3, $fn=40);
-            }
+        // Include the JST Connector for V2 as this
+        // can hit the switch.
+        JSTConnector();
+        NeoPixels();
+    }
+}
+
+module JSTConnector() {
+    // 8mm hight
+    // 64mm down from top
+    // 5.5mm high
+    translate([21.5,pcbHeight-8-64, -5.5]) {
+        color( "black" ) {
+            cube([8, 8, 5.5]);
         }
+    }
+}
+
+module NeoPixels() {
+    NeoPixel(16.5,9.5);
+    NeoPixel(81,9.5);
+    NeoPixel(13.8,73);
+    NeoPixel(89,72);
+    
+}
+
+module NeoPixel(x,y) {
+    neoPixelWidth = 5.0;
+    neoPixelHeight = 5.0;
+    neoPixelDepth = 1.5;
+    
+    translate([x,pcbHeight-neoPixelHeight-y, -neoPixelDepth]) {
+        color( "yellow" ) {
+            cube([neoPixelWidth, neoPixelHeight, neoPixelDepth]);
+        }
+    }
+}
+
+// -----------------------------------------
+// Show the touch area on the PCB.
+// -----------------------------------------
+module touchPad(yPosition, pcbHeight, pcbThickness ) {
+    height = 40; 
+    width = 85;
+    // 8mm from left/right edge.
+    translate([8,pcbHeight-height-yPosition, 0]) {
+        color( "SteelBlue" )  {
+            cube([width , height , pcbThickness + 1]);
+        }
+    }
 }
 
 // -----------------------------------------
@@ -426,22 +486,32 @@ module Cover() {
                     GenericBase(coverWidth-doubleOverlap, coverHeight- doubleOverlap, coverDepth);
                 }
             } else {
-                coverCutouts(coverWidth, 
+                if (pcbVersion == 1) {
+                    coverCutoutsV1(coverWidth, 
                                 coverHeight, 
                                 coverWallThickness, 
                                 coverTopThickness,
                                 coverDepth, 
                                 coverTopOverlap, 
                                 coverWallOffset);
+                } else if (pcbVersion == 2) {
+                    coverCutoutsV2(coverWidth, 
+                                coverHeight, 
+                                coverWallThickness, 
+                                coverTopThickness,
+                                coverDepth, 
+                                coverTopOverlap, 
+                                coverWallOffset);
+                }
             }
         }
 	}
 }
 
 // -----------------------------------------
-// Defines the parts of the cover to be cutout.
+// Defines the parts of the cover to be cutout for the V1 board.
 // -----------------------------------------
-module coverCutouts(coverWidth, 
+module coverCutoutsV1(coverWidth, 
                     coverHeight, 
                     coverWallThickness, 
                     coverTopThickness,
@@ -453,44 +523,116 @@ module coverCutouts(coverWidth,
     sensorSetTopOffset = 3.5;
     sensorSetHeight = 12;
     sensorSetWidth = 8;
+        
+    touchCoverCutouts(coverWidth,
+                    coverHeight, 
+                    coverWallThickness, 
+                    coverTopThickness,
+                    coverDepth, 
+                    coverTopOverlap, 
+                    coverWallOffset);
+                
+    // Cut out the space for the sensors.
+    // move down coverWallThickness + 2mm 
+    // from top so some PCB is covered.           
+    translate([(coverWidth/2),
+                coverWallThickness + sensorSetTopOffset + (sensorSetWidth/2)-1,
+                depth-coverTopThickness + coverWallOffset]) {
+        #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
+    }
+                
+    translate([(coverWidth/2),
+                coverWallThickness + sensorSetTopOffset + sensorSetHeight - (sensorSetWidth/2) + 1,
+                depth-coverTopThickness + coverWallOffset]) {
+        #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
+    }
+                
+    // Join the two cylinders to make the cutout oblong
+    translate([(coverWidth/2)-(sensorSetWidth/2),
+                coverWallThickness + sensorSetTopOffset + 3,
+                depth-coverTopThickness + coverWallOffset]) {
+        #cube([sensorSetWidth,sensorSetHeight-6,coverTopThickness]);
+    }
+    
+    // Don't include LED holes as material is most likely thin enough
+    // for the LEDs to shine through without needing extra holes.
+}
+
+// -----------------------------------------
+// Defines the parts of the cover to be cutout for the V1 board.
+// -----------------------------------------
+module coverCutoutsV2(coverWidth, 
+                    coverHeight, 
+                    coverWallThickness, 
+                    coverTopThickness,
+                    coverDepth, 
+                    coverTopOverlap, 
+                    coverWallOffset) {
+
+    // How far down from the top of the cover the opening for the sensor set should be.
+    sensorSetTopOffset = 3;
+    sensorSetHeight = 8;
+    sensorSetWidth = 65;
+                                                  
+    touchCoverCutouts(coverWidth,
+                    coverHeight, 
+                    coverWallThickness, 
+                    coverTopThickness,
+                    coverDepth, 
+                    coverTopOverlap-1.5, 
+                    coverWallOffset);
+   
+    // Cut out the space for the sensors.
+    // move down coverWallThickness + n mm 
+    // from top so some PCB is covered.            
+    translate([(coverWidth/2) - (sensorSetWidth/2),
+                coverWallThickness + sensorSetTopOffset + (sensorSetHeight/2),
+                depth-coverTopThickness + coverWallOffset]) {
+        #cylinder(d=sensorSetHeight, h=coverTopThickness, $fn=20);
+    }
+                
+    translate([(coverWidth/2) + (sensorSetWidth/2),
+                coverWallThickness + sensorSetTopOffset + (sensorSetHeight/2),
+                depth-coverTopThickness + coverWallOffset]) {
+        #cylinder(d=sensorSetHeight, h=coverTopThickness, $fn=20);
+    }
+                
+    // Join the two cylinders to make the cutout oblong
+    translate([(coverWidth/2)-(sensorSetWidth/2),
+                coverWallThickness + sensorSetTopOffset,
+                depth-coverTopThickness + coverWallOffset]) {
+        #cube([sensorSetWidth,sensorSetHeight,coverTopThickness]);
+    }
+                                
+    // Don't include LED holes as material is most likely thin enough
+    // for the LEDs to shine through without needing extra holes.
+}
+
+// -----------------------------------------
+// Defines the parts of the cover to be cutout for the touch sensor
+// -----------------------------------------
+module touchCoverCutouts(coverWidth, 
+                    coverHeight, 
+                    coverWallThickness, 
+                    coverTopThickness,
+                    coverDepth, 
+                    coverTopOverlap, 
+                    coverWallOffset) {
     
     // How much over the bottom the cover should cover.
     // this hides the non-touchable zone (where the Photon would mess
     // with tuch sensor.
-    coverBottomOverlap = 43;
-    
-                // Cut out the main touch switch area.
-                // Gives an overlap of 10mm on the PCB left and right
-                // and a larger overlap at the top to cover the sensor area.
-                // and matching overlap at the bottom to give it some sym.
-                translate([10,coverTopOverlap,+2]) {
-                    GenericBase(coverWidth-20, coverHeight- (coverTopOverlap + coverBottomOverlap ), coverDepth);
-                }
-                
-                // Cout out the space for the sensors.
-                // move down coverWallThickness + 2mm from top so some PCB is covered.           
-                translate([(coverWidth/2),
-                            coverWallThickness + sensorSetTopOffset + (sensorSetWidth/2)-1,
-                            depth-coverTopThickness + coverWallOffset]) {
-                    #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
-                }
-                
-                translate([(coverWidth/2),
-                            coverWallThickness + sensorSetTopOffset + sensorSetHeight - (sensorSetWidth/2) + 1,
-                            depth-coverTopThickness + coverWallOffset]) {
-                    #cylinder(d=sensorSetWidth, h=coverTopThickness, $fn=20);
-                }
-                
-                // Join the two cylinders to make the cutout oblong
-                translate([(coverWidth/2)-(sensorSetWidth/2),
-                            coverWallThickness + sensorSetTopOffset + 3,
-                            depth-coverTopThickness + coverWallOffset]) {
-                    #cube([sensorSetWidth,sensorSetHeight-6,coverTopThickness]);
-                }
-                                
-                // Don't include LED holes as material is most likely thin enough
-                // for the LEDs to shine through without needing extra holes.
+    coverBottomOverlap = coverHeight - (coverTopOverlap + 40 + 4);
+                            
+    // Cut out the main touch switch area.
+    // Gives an overlap of 10mm on the PCB left and right
+    // and a larger overlap at the top to cover the sensor area.
+    // and matching overlap at the bottom to give it some sym.
+    translate([10,coverTopOverlap,+2]) {
+        GenericBase(coverWidth-20, coverHeight- (coverTopOverlap + coverBottomOverlap ), coverDepth);
+    }
 }
+
 
 // -----------------------------------------
 // Show the model of the switch.
