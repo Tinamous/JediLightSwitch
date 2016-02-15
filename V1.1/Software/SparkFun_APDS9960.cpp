@@ -14,6 +14,9 @@
  *   Off:                   1mA
  *   Waiting for gesture:   14mA
  *   Gesture in progress:   35mA
+ * 
+ * SH: Modified library to work with Photon and added 100uS delay 
+ * to wireReadDataByte to improve stability.
  */
  
  #include "application.h"
@@ -620,7 +623,7 @@ bool SparkFun_APDS9960::readAmbientLight(uint16_t &val)
 {
     uint8_t val_byte;
     val = 0;
-    
+
     /* Read value from clear channel, low byte register */
     if( !wireReadDataByte(APDS9960_CDATAL, val_byte) ) {
         return false;
@@ -631,8 +634,8 @@ bool SparkFun_APDS9960::readAmbientLight(uint16_t &val)
     if( !wireReadDataByte(APDS9960_CDATAH, val_byte) ) {
         return false;
     }
-    val = val + ((uint16_t)val_byte << 8);
     
+    val = val + ((uint16_t)val_byte << 8);
     return true;
 }
 
@@ -646,7 +649,7 @@ bool SparkFun_APDS9960::readRedLight(uint16_t &val)
 {
     uint8_t val_byte;
     val = 0;
-    
+
     /* Read value from clear channel, low byte register */
     if( !wireReadDataByte(APDS9960_RDATAL, val_byte) ) {
         return false;
@@ -672,7 +675,7 @@ bool SparkFun_APDS9960::readGreenLight(uint16_t &val)
 {
     uint8_t val_byte;
     val = 0;
-    
+
     /* Read value from clear channel, low byte register */
     if( !wireReadDataByte(APDS9960_GDATAL, val_byte) ) {
         return false;
@@ -698,7 +701,7 @@ bool SparkFun_APDS9960::readBlueLight(uint16_t &val)
 {
     uint8_t val_byte;
     val = 0;
-    
+
     /* Read value from clear channel, low byte register */
     if( !wireReadDataByte(APDS9960_BDATAL, val_byte) ) {
         return false;
@@ -710,7 +713,7 @@ bool SparkFun_APDS9960::readBlueLight(uint16_t &val)
         return false;
     }
     val = val + ((uint16_t)val_byte << 8);
-    
+
     return true;
 }
 
@@ -2174,18 +2177,23 @@ bool SparkFun_APDS9960::wireWriteDataBlock(  uint8_t reg,
  */
 bool SparkFun_APDS9960::wireReadDataByte(uint8_t reg, uint8_t &val)
 {
-    
     /* Indicate which register we want to read from */
     if (!wireWriteByte(reg)) {
+        digitalWrite(D7, LOW);
         return false;
     }
     
+    // SH: Short delay to improve stability of read from the APDS9960
+    // without this Wire.requestFrom appears to not return.
+    delayMicroseconds(100);
+    
     /* Read from register */
     Wire.requestFrom(APDS9960_I2C_ADDR, 1);
+    
     while (Wire.available()) {
         val = Wire.read();
     }
-
+    
     return true;
 }
 

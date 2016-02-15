@@ -1,421 +1,338 @@
-// This #include statement was automatically added by the Spark IDE.
-#include "HTU21D/HTU21D.h"
+// This #include statement was automatically added by the Particle IDE.
+#include "SenMLBuilder.h"
 
 // This #include statement was automatically added by the Particle IDE.
+#include "IrBlaster.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "LightSensor.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "LedHandler.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "PowerManagement.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "GestureSensor.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "TouchSensors.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "EnvironmentSensors.h"
+
+// This isn't neaded but Partile build complains if it's not.
+// It's already included in GestureSensor.h
 #include "SparkFun_APDS9960.h"
 
-// D0/D1 used for I2C
-int gestureInteruptPin = D2;
-int topRightLed = D3;
-int topLeftLed = D4;
-int touchInput = D5;
+///////////////////////////////////////////////////////////////////////////////////
+// 0: V1.0 board (with logo on)
+// 1: V1.1 board (2 vertical front sensors, LED in each corner)
+// 2: V1.2 board (5 horizontal front sensors)
+const int HARDWARE_REV = 2;
+///////////////////////////////////////////////////////////////////////////////////
 
-// Spark variables
-int errorCode = 0;
-int ambientLight = 0;
-int redLevel = 0;
-int greenLevel = 0;
-int blueLevel = 0;
-int proximity = 0;
+///////////////////////////////////////////////////////////////////////////////////
+// Hardware abstraction.
+LedHandler* leds;
+EnvironmentSensors* environmentSensors;
+TouchSensors* touchSensors;
+GestureSensor* gestureSensor;
+PowerManagement* powerManagement;
+IrBlaster* irBlaster;
+///////////////////////////////////////////////////////////////////////////////////
 
-int clockSpeed = CLOCK_SPEED_400KHZ;
+///////////////////////////////////////////////////////////////////////////////////
+// Particle functions
+// Flash the user facing LEDs
+int flash(String command);
+// Switch on the internal LED to make the box glow.
+int glow(String command);
+// Turn off User facing LEDs/Internal LED
+int off(String command);
+///////////////////////////////////////////////////////////////////////////////////
 
-// Interrup from gesture sensor flag.
-volatile int gestureIsrFlag = 0;
-volatile int touchIsrFlag = 0;
+// Build a senml document for publishing
+// NB: Max document size for publishing is 255 bytes.
+SenMLBuilder senMLBuilder = SenMLBuilder();
 
-#define PROX_INT_HIGH   50 // Proximity level for interrupt
-#define PROX_INT_LOW    0  // No far interrupt
-
-// APDS-9960 variables for light/proximity and gesture sensing.
-SparkFun_APDS9960 apds = SparkFun_APDS9960();
-uint16_t ambient_light = 0;
-uint16_t red_light = 0;
-uint16_t green_light = 0;
-uint16_t blue_light = 0;
-uint8_t proximity_data = 0;
-bool useLightAndGesture = false;
-
-// Temperature and humidity
-HTU21D humiditySensor;
-// Spark variables for tracking humidity and temperature
-uint16_t humidity = 0;
-uint16_t temperature = 0;
+// If the lightswitch things it is currently dark.
+bool isDark = false;
 
 // Loop counter 
 int loopCounter = 0;
+int publishMeasurementsCounter = 0;
 
+// If measurements should be taken on the next run through loop.
+bool timeToTakeMeasurements = false;
+
+// Measurement timer. Every n seconds.
+Timer takeMeasurementsTimer(20000, takeMeasurementsTick);
+
+// ***********************************************************************
+// Setup
+// ***********************************************************************
 void setup() {
-    //Serial.begin(9600);
-    //Serial.println();
-    //Serial.println("--------------------------------");
-    //Serial.println("APDS-9960 - GestureTest");
-    //Serial.println("--------------------------------");
-    //Serial.println();
-  
-    // Define Particle variables for Tinamous to access.
-    /*
-    Particle.variable("errorCode", &errorCode, INT);
-    Particle.variable("ambientLight", &ambientLight, INT);
-    Particle.variable("redLevel", &redLevel, INT);
-    Particle.variable("greenLevel", &greenLevel, INT);
-    Particle.variable("blueLevel", &blueLevel, INT);
-    Particle.variable("proximity", &proximity, INT);
-    Particle.variable("humidity", &humidity, INT);
-    Particle.variable("temperature", &temperature, INT);
-    */
     
-    // Take control of the spark LED and make it dimmer as it's very
-    // bright by default (Core only, Photon not so bright)
-    RGB.control(true);
-    RGB.brightness(100);
+    setupHAL();
+
+    setupLeds();
     
-    // Set red to show initializing.
-    RGB.color(255, 0, 0);
-  
-    // Set output mode for D7 LED.
-    pinMode(D7, OUTPUT);
-    pinMode(topLeftLed, OUTPUT);
-    pinMode(topRightLed, OUTPUT);
-    pinMode(touchInput, INPUT);
-    digitalWrite(topLeftLed, HIGH);
-    digitalWrite(topRightLed, HIGH);
+    setupGestureSensor();
     
-    // Setup I2C as master.
-    Wire.setSpeed(clockSpeed);
-    Wire.begin();
+    setupTouch();
     
-    useLightAndGesture = setupLightAndGesture();
-    if (!useLightAndGesture) {
-        Particle.publish("Setup", "APDS-9960 setup error. Disabled.");
-        RGB.color(255, 0, 00);
-    }
-    // Allow the status message to be sent.
-    delay(1000);
+    setupEnvironmentSensors();
     
-    // Now everything is set-up attach the intterupts
-    //attachInterrupt(touchInteruptPin, touchInterup, FALLING);
-    pinMode(gestureInteruptPin, INPUT); // Already has 10k pull-up.
-    attachInterrupt(gestureInteruptPin, gestureInterupt, FALLING);
+    setupIrBlaster();
     
-    // Initialize Temperature and humidity
-    if (!humiditySensor.begin()) {
-        RGB.color(255, 0, 00);
-    }
+    setupParticleFunctions();
     
-    // TODO: Attach interrupt to touchInput...
-    attachInterrupt(touchInput, touchInterupt, RISING);
+    //attachInterrupt(D2, interruptHandler, FALLING);
     
-    //Serial.println("Setup Complete.");
-    delay(500);
-    digitalWrite(topLeftLed, LOW);
-    digitalWrite(topRightLed, LOW);
+    setupComplete();
+    
+    // Force and an initial measurement reading.
+    //timeToTakeMeasurements = true;
 }
 
+void interruptHandler() {
+    leds->debugLedOn();
+}
+
+// Setup the hardware abstraction layer classes.
+void setupHAL() {
+    if (HARDWARE_REV == 2) {
+        leds = new LedHandlerV2();
+        gestureSensor = new GestureSensorV2(leds);
+        environmentSensors = new EnvironmentSensorsV2(leds);
+        irBlaster = new IrBlasterV2();
+        touchSensors = new TouchSensorsV2(leds);
+        powerManagement = new PowerManagementV2();
+    } else {
+        leds = new LedHandlerV1();
+        gestureSensor = new GestureSensorV1(leds);
+        environmentSensors = new EnvironmentSensorsV1(leds);
+        irBlaster = new IrBlasterV1();
+        touchSensors = new TouchSensorsV1(leds);
+        powerManagement = new PowerManagementV1();
+    }
+    
+}
+
+void setupLeds() {
+    if (!leds->init()) {
+        Particle.publish("Setup", "Leds setup error.");
+        RGB.color(255, 0, 00);
+    }
+}
+
+void setupGestureSensor() {
+    if (!gestureSensor->init()) {
+        Particle.publish("Setup", "APDS-9960 setup error.");
+        RGB.color(255, 0, 00);
+    } 
+}
+
+void setupEnvironmentSensors() {
+    if (!environmentSensors->init()) {
+        Particle.publish("Setup", "EnvironmentSensors setup failed.");
+        RGB.color(255, 0, 00);
+    }
+}
+
+void setupIrBlaster() {
+    if (!irBlaster->init()) {
+        Particle.publish("Setup", "IR Blaster setup failed.");
+        RGB.color(255, 0, 00);
+    }
+}
+
+void setupTouch() {
+    if (!touchSensors->init()) {
+        Particle.publish("Setup", "Touch sensor setup faield.");
+        RGB.color(255, 0, 00);
+    }
+}
+
+void setupPowerManagement() {
+    if (!powerManagement->init()) {
+        Particle.publish("Setup", "Power management setup failed.");
+        RGB.color(255, 0, 00);
+    }
+}
+
+// Set-up internet callable Particle functions
+void setupParticleFunctions() {
+    Particle.function("flash", flash);
+    Particle.function("glow", glow);
+    Particle.function("off", off);
+}
+
+void setupComplete() {
+    // Complete setup.
+    Particle.publish("Setup", "Jedi Light Switch Set-up complete. V1.2.15");
+    
+    // Short delay to allow the LEDs to be seen and
+    // publishing to happen.
+    delay(500);
+    leds->ledsOff();
+    
+    // Start the measurements timer
+    takeMeasurementsTimer.start();
+}
+
+// ***********************************************************************
+// Main Loop
+// ***********************************************************************
 void loop() {
     
-    // Flash the onboard tricolor LED blue to indicate running.
-    RGB.color(0, 0, 255);
-    delay(50);
-    RGB.color(0, 0, 0);
-    delay(50);
+    gestureSensor->checkForGesture();
+    touchSensors->checkIfTouched();
+    
+    if (timeToTakeMeasurements) {
+        takeMeasurements();
+    }
+    
+    // Check to see if the light level has changes
+    // Uses Gesture sensor and/or environment sensors which are updated 
+    // in the background.
+    checkLightDarkLevel();
 
-    // Read light, temperature and humidity levels every x times around the loop. 
-    if (loopCounter > 300) {
-        // Flash the LEDs when measuring to give feedback
-        digitalWrite(topLeftLed, HIGH);
-        digitalWrite(topRightLed, HIGH);
-    
-        // Read the light level every loop but 
-        // only publish the update every 50 times around.
-        readLightLevel(true);
-        readTemperatureAndHumidity(true);
-        loopCounter = 0;
-        delay(250);
-        
-        ledsOff();
-     }
-     
-    // If gesture interrupt flag.
-    if (gestureIsrFlag) {
-        //detachInterrupt(gestureInteruptPin);
-        noInterrupts();
-        
-        //readProximity();
-        handleGesture();
-        
-        delay(250);
-        ledsOff();
-        gestureIsrFlag = 0;
-        
-        interrupts();
-        //attachInterrupt(gestureInteruptPin, gestureInterupt, FALLING);
-    }
-    
-    if (touchIsrFlag) {
-        noInterrupts();
-        
-        digitalWrite(topLeftLed, HIGH);
-        digitalWrite(topRightLed, HIGH);
-        
-        Particle.publish("Status", "Touched");
-        delay(250);
-        
-        ledsOff();
-        touchIsrFlag = 0;
-        interrupts();
-    }
-    
     loopCounter++;
-} 
-
-void ledsOff() {
-    digitalWrite(topLeftLed, LOW);
-    digitalWrite(topRightLed, LOW);
-    digitalWrite(D7, LOW);
+    delay(250);
+    leds->debugLedOff();
 }
 
-// ***********************************************************************
-// Temperature and Humidity
-// ***********************************************************************
-
-void readTemperatureAndHumidity(bool publish) {
-    float h = humiditySensor.readHumidity();
-    if (h < 100) {
-        humidity = h;
-    } else {
-        RGB.color(255, 0, 0);
-    }
-    
-    float t = humiditySensor.readTemperature();
-    if (t<100) {
-        temperature = t;
-    } else {
-        RGB.color(255, 0, 0);
-    }
-    
-    if (publish) {
-        Particle.publish("senml", "{e:[{'n':'Temperature','v':'" + String(temperature) + "'},{'n':'Humidity','v':'" + String(humidity) + "'}]}");
-    }
-    
-    //humidity = humiditySensor.readHumidity() * 100;
-    //temperature = humiditySensor.readTemperature() * 100;
+// Called every n seconds by the timer.
+// to take light/temperature/humidity measurements and 
+// publish them.
+// Does not actually take the measurements as it publishes
+// and this can cause delays which are undesirable
+void takeMeasurementsTick() {
+    timeToTakeMeasurements = true;
 }
 
-// ***********************************************************************
-// Light and Gesture
-// ***********************************************************************
-
-// Initialise Gesture/Light/Proximity Sensor
-bool setupLightAndGesture() {
+// Called every n seconds by the timer.
+// to take light/temperature/humidity measurements and 
+// publish them.
+void takeMeasurements() {
     
-    RGB.color(0, 0, 0);
-    Particle.publish("Setup", "APDS-9960 Setup.");
+    timeToTakeMeasurements = false;
     
-    // Initialize APDS-9960 (configure I2C and initial values)
-    errorCode = apds.init();
-    if ( errorCode < 0) {
-        Particle.publish("Setup", "Error during APDS-9960 init. APDS-9960 Error code: " + String(errorCode));
-        errorCode = 1;
-        RGB.color(255, 0, 00);
-        return false;
-    }
+    // Flash the LEDs when measuring to give feedback
+    //allLedsOn(); // temp debug to show reading
+    //leds->debugLedOn();
     
-    // Start running the APDS-9960 gesture sensor engine
-    if (!apds.enableGestureSensor(true) ) {
-        RGB.color(255, 0, 00);
-        errorCode = 8;
-        Particle.publish("Setup", "Enable Gesture setup failed.");
-        return false;
-    }
+    // Read the light level every loop but 
+    // only publish the update every n times around.
+    gestureSensor->readLightLevel(false);
     
-    // Enable light sensing
-    if ( !apds.enableLightSensor(false) ) {
-        RGB.color(255, 0, 00);
-        errorCode = 3;
-        Particle.publish("Setup", "Error enabling light sensor");
-        return false;
-    }
+    //gestureSensor->readLightColors(publishMeasurements);
+    environmentSensors->readTemperatureAndHumidity(false);
     
-    // Adjust the Proximity sensor gain
-    //if ( !apds.setProximityGain(PGAIN_2X) ) { // PGAIN_2X
-    //    RGB.color(255, 0, 00);
-    //    errorCode = 4;
-    //    Particle.publish("Setup", "Error  trying to set PGAIN");
-    //    return false;
-    //} 
-      
-    // Set proximity interrupt thresholds
-    //if ( !apds.setProximityIntLowThreshold(PROX_INT_LOW) ) {
-    //    RGB.color(255, 0, 00);
-    //    errorCode = 5;
-    //    Particle.publish("Setup", "Error  trying to set low threshold");
-    //    return false;
-    //}
+    environmentSensors->readAnalogLightLevel(false);
     
-    //if ( !apds.setProximityIntHighThreshold(PROX_INT_HIGH) ) {
-    //    RGB.color(255, 0, 00);
-    //    errorCode = 6;
-     //   Particle.publish("Setup", "Error  trying to set high threshold");
-     //   return false;
-    //}
-      
-      /*
-    // Start running the APDS-9960 proximity sensor (interrupts)
-    if ( !apds.enableProximitySensor(true) ) {
-        RGB.color(255, 0, 00);
-        errorCode = 7;
-        Spark.publish("Setup", "Enable Proximity setup failed.");
-        return false;
-    }*/
+    powerManagement->readPowerState(false);
     
-    // Configure for Left/Right swipe only.
-
-
-    // Wait for initialization and calibration to finish
-    Particle.publish("Setup", "APDS-9960 Setup completed successfully.");
-    
-    return true;
-}
-
-void readLightLevel(bool publish) {
-    
-    // TODO: Determine if proximity is triggered and skip measurement if so
-    // so that measurement isn't taken with blocked sensor.
-    
-    // Read light levels
-    readAmbientLight();
-    readRedLight();
-    readGreenLight();
-    readBlueLight();
-
-    // Publish details
-    if (publish) {
-        Particle.publish("senml", "{e:[{'n':'LightLevel','v':'" + String(ambientLight) + "'},{'n':'Red','v':'" + String(redLevel) + "'},{'n':'Green','v':'" + String(greenLevel) + "'},{'n':'Blue','v':'" + String(blueLevel) + "'}]}");
-    }
-}
-
-void readAmbientLight() {
-    if (apds.readAmbientLight(ambient_light)) {
-        ambientLight = ambient_light;
-    } else {
-        errorCode = 100;
-        RGB.color(255, 0, 0);
-        Particle.publish("Error", "Error reading ambient light level");
-        delay(250); 
-    }
-}
-
-void readRedLight() {
-    if (apds.readRedLight(red_light)) {
-        redLevel = red_light;
-    } else {
-        errorCode = 101;
-        RGB.color(255, 0, 0);
-        Particle.publish("Error", "Error reading red light level");
-        delay(250); 
-    }
-}
-
-void readGreenLight() {
-    if (apds.readGreenLight(green_light)) {
-        greenLevel = green_light;
-    } else {
-        errorCode = 102;
-        RGB.color(255, 0, 0);
-        Particle.publish("Error", "Error reading green light level");
-        delay(250); 
-    }
-}
-
-void readBlueLight() {
-    if (apds.readBlueLight(blue_light)) {
-        blueLevel = blue_light;
-    } else {
-        errorCode = 103;
-        RGB.color(255, 0, 0);
-        Particle.publish("Error", "Error reading blue light level");
-        delay(250); 
-    }
-}
-
-void readProximity() {
-    gestureIsrFlag = 0;
-    if ( !apds.clearProximityInt() ) {
-        Particle.publish("Error", "Error clearing interrupt");
-        RGB.color(255, 0, 0);
-    }
-    
-    // Check proximity.
-    if ( apds.readProximity(proximity_data) ) {
-        // Set LED blue level to proximity level
-        RGB.color(0, 0, proximity_data);
-        proximity = proximity_data;
+    // publish the measurements as one block if appropriate and reset the counters
+    if (publishMeasurementsCounter > 0) {
+        // Start a nice fresh senml document.
+        senMLBuilder.begin();
+        environmentSensors->appendSenML(&senMLBuilder);
+        gestureSensor->appendSenML(&senMLBuilder);
+        powerManagement->appendSenML(&senMLBuilder);
+        senMLBuilder.publish();
         
-        Spark.publish("Proximity", String(proximity_data) ); 
-        delay(100);
-        //Serial.print("Proximity:");
-        //Serial.println(proximity_data);
-    } 
+        publishMeasurementsCounter = 0;
+    }
+    publishMeasurementsCounter++;
+    
+    // Delay to allow the leds to be seen to flash
+    delay(250);
+    //leds->debugLedOff();
 }
 
-void handleGesture() {
-    if (apds.isGestureAvailable()) {
-        //Serial.println("G");
-        //RGB.color(255, 255, 0);
-        digitalWrite(topLeftLed, LOW);
-        digitalWrite(topRightLed, LOW);
+// ***********************************************************************
+// Check to see if it is light/dark.
+// ***********************************************************************
+void checkLightDarkLevel() {
+    // TODO: Make ambientLightThreshold configurable via particle function.
+    
+    if (gestureSensor->isDark()) {
+        if (!isDark) {
+            // Below "Dark" level
+            // Enable glowing.
+            leds->glow();
         
-        int gestureValue = apds.readGesture();
-        //Particle.publish("Status", String(gestureValue));
-
-        switch (gestureValue) {
-            case DIR_NONE: // 0
-                //Particle.publish("Status", "Swipe None");
-                // Skip the delay.
-                return;
-            case DIR_LEFT: // 1
-                RGB.color(0, 255, 0);
-                digitalWrite(topLeftLed, HIGH);
-                digitalWrite(topRightLed, LOW);
-                Particle.publish("Status", "Swipe Left");
-                break;
-            case DIR_RIGHT: // 2
-                RGB.color(255, 0, 0);
-                digitalWrite(topLeftLed, LOW);
-                digitalWrite(topRightLed, HIGH);
-                Particle.publish("Status", "Swipe Right");
-                break;
-            case DIR_UP: // 3
-                Particle.publish("Status", "Up");
-                break;
-            case DIR_DOWN: // 4
-                Particle.publish("Status", "Down");
-                break;
-            case DIR_NEAR: // 5
-                Particle.publish("Status", "Near");
-                break;
-            case DIR_FAR: // 6
-                Particle.publish("Status", "Far");
-                break;
-            case DIR_ALL: // 7
-                Particle.publish("Status", "ALL!");
-                break;
-         // default:
-            //Serial.println("NONE");
+            Particle.publish("Status", "It is now dark.");
+            isDark = true;
+        }
+    }  else if (gestureSensor->isLight()) {
+        if (isDark) {
+            // Above "Light" level
+            // Disable glowing.
+            // TODO: But not if requested via the glow particle.function 
+            leds->noglow();
+        
+            Particle.publish("Status", "It is now light.");
+            isDark = false;
         }
         
-        // Send publish info delay
-        delay(100);
-    } 
+        return;
+    }
 }
 
-// Gesture Interrupt
-void gestureInterupt() {
-    // Ignore gesture for now to try and trace stability issues.
-    // gestureIsrFlag = 1;
+///////////////////////////////////////////
+// Particle Function handles
+///////////////////////////////////////////
+
+// Flash the user facing LEDs
+int flash(String command) {
+    
+    for (int i = 0; i<10; i++) {
+        leds->ledsOff();
+        leds->topLedsOn();
+        delay(250);
+        
+        leds->ledsOff();
+        leds->bottomLedsOn();
+        delay(250);
+    }
+    
+    leds->ledsOff();
+    
+    Particle.publish("Status", "Flashed LEDs");
+    return 1;
 }
 
-void touchInterupt() {
-    touchIsrFlag = 1;
+// Switch on the internal LED to make the box glow.
+int glow(String command) {
+    if (command == "on") {
+        leds->glow();
+        Particle.publish("Status", "Glowing");
+        return 1;
+    } else if (command == "rainbow") {
+        leds->rainbowGlow();
+        Particle.publish("Status", "Rainbow Glowing");
+        return 2;
+    }
+    else {
+        leds->noglow();
+        Particle.publish("Status", "Not Glowing");
+        return 0;
+    }
+    
+    Particle.publish("Status", "No command for glow :-(");
+    return -1;
+}
+
+// Turn off User facing LEDs/Internal LED
+int off(String command) {
+    
+    leds->ledsOff();
+    leds->noglow();
+    Particle.publish("Status", "LEDs Off");
+    return 0;
 }
